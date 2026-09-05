@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+frontend/.env.local
+
+# Runtime data
+*.db
+*.sqlite3
+registry/trusted/*
+registry/quarantine/*
+registry/rejected/*
+registry/lkg/*
+!registry/trusted/.gitkeep
+!registry/quarantine/.gitkeep
+!registry/rejected/.gitkeep
+!registry/lkg/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log

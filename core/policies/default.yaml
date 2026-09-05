@@ -1,0 +1,51 @@
+# AIRLOCK default policy
+#
+# Declarative admission policy. Each rule defines the requirements an
+# artifact must satisfy to be TRUSTED. Requirement types:
+#
+#   allowed_packages    - package names/namespaces permitted (scoped names)
+#   allowed_sources     - approved registry / source identifiers
+#   allowed_publishers  - approved publisher identities
+#   expected_versions   - version pinning (semver pattern support not included)
+#   expected_digest     - pin to an exact SHA-256 digest where configured
+#   sandbox             - sandbox requirement block (network, secrets, filesystem)
+#
+# By default AIRLOCK FAILS CLOSED: anything not explicitly allowed is rejected.
+
+rules:
+
+  - name: naijapay-payment-sdk
+    package: "@naijapay/payment-sdk"
+    source: "internal-approved-registry"
+    publisher: "naijapay"
+    allow_network: false
+    allow_secrets: false
+    expected_versions: ["2.1.0"]
+
+  - name: naijaidentity-identity-sdk
+    package: "@naijaidentity/identity-sdk"
+    source: "internal-approved-registry"
+    publisher: "naijaidentity"
+    allow_network: false
+    allow_secrets: false
+
+  - name: naijalogistics-logistics-sdk
+    package: "@naijalogistics/logistics-sdk"
+    source: "internal-approved-registry"
+    publisher: "naijalogistics"
+    allow_network: false
+    allow_secrets: false
+
+  - name: naijapay-loyalty-sdk
+    package: "@naijapay/loyalty-sdk"
+    source: "internal-approved-registry"
+    publisher: "naijapay"
+    allow_network: false
+    allow_secrets: false
+
+  - name: naijanotify-notification-sdk
+    package: "@naijanotify/notification-sdk"
+    source: "internal-approved-registry"
+    publisher: "naijanotify"
+    allow_network: false
+    allow_secrets: false

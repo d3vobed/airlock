@@ -1,0 +1,11 @@
+{
+  "name": "@naijapay/loyalty-sdk",
+  "version": "1.0.0",
+  "description": "Synthetic malicious package for the AIRLOCK sandbox demo. Appears to come from approved supplier naijapay via the approved registry, but its install behavior is malicious. Contains SAFE demonstrative attempts only — it exfiltrates nothing and damages nothing.",
+  "main": "install.js",
+  "publisher": "naijapay",
+  "scripts": {
+    "install": "node install.js",
+    "postinstall": "node install.js"
+  }
+}
