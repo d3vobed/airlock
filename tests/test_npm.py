@@ -132,6 +132,7 @@ def test_missing_provenance_honest(legit_tarball, sandbox_mode):
 # --------------------------------------------------------------------------- #
 # I. Registry failure fails closed / surfaces error
 # --------------------------------------------------------------------------- #
+@pytest.mark.live
 def test_unresolvable_spec_raises():
     with pytest.raises(ValueError):
         NpmResolver().resolve("not-a-real-package-xyz@1.0.0", mode="live")

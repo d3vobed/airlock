@@ -25,13 +25,17 @@ install:
 	$(BIN)/pip install --upgrade pip
 	$(BIN)/pip install -r requirements.txt
 
-# Offline by default: no network required, uses committed fixtures.
+# Offline by default: no network, no Docker daemon required (fixtures only).
 test:
-	$(BIN)/pytest -q -m "not live"
+	$(BIN)/pytest -q -m "not live and not docker"
 
 # Explicitly exercises real-registry npm resolution + fixtures.
 test-live-npm:
-	$(BIN)/pytest -q
+	$(BIN)/pytest -q -m "not docker"
+
+# Real isolated-container tests (requires Docker daemon).
+test-docker:
+	$(BIN)/pytest -q -m docker
 
 lint:
 	$(BIN)/python -m compileall -q apps core demo

@@ -11,7 +11,10 @@ import pytest
 from apps.sandbox.runner import SandboxRunner, docker_available
 from .conftest import REPO_ROOT
 
-pytestmark = pytest.mark.skipif(not docker_available(), reason="Docker daemon not available")
+pytestmark = [
+    pytest.mark.docker,
+    pytest.mark.skipif(not docker_available(), reason="Docker daemon not available"),
+]
 
 
 def test_real_sandbox_container_runs():

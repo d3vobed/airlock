@@ -25,8 +25,8 @@ jobs:
       - name: Compile all modules
         run: python -m compileall -q apps core demo
 
-      - name: Run test suite (offline)
-        run: pytest -q -m "not live"
+      - name: Run test suite (offline, no Docker)
+        run: pytest -q -m "not live and not docker"
 
   backend-docker:
     name: Backend tests (real Docker sandbox)

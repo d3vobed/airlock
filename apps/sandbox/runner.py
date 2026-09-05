@@ -60,7 +60,7 @@ class SandboxResult:
         }
 
 
-SANDBOX_DOCKERFILE_INLINE = r"""
+SANDBOX_DOCKERFILE_INLINE = """\
 FROM node:20-alpine
 WORKDIR /app
 # Nothing else: the workspace is mounted read-only for the run script.
@@ -200,7 +200,6 @@ setTimeout(() => {
             "-m", policy.memory_limit,
             "--cpus", str(policy.cpu_limit),
             "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
-            "--tmpfs", "/workspace:rw,noexec,nosuid,size=128m",
             *mount_args,
         ]
 
