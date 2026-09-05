@@ -1,0 +1,95 @@
+name: airlock
+
+# Continuous hardening of the supply-chain controls themselves: the security
+# pipeline must never regress silently, so we re-run every admission scenario
+# on main and on tagged releases.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  demo-matrix:
+    name: Admission scenario matrix (simulate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Legitimate package must be TRUSTED
+        run: |
+          python -m apps.cli.airlock admit demo/legitimate-package/package.tgz \
+            --source internal-approved-registry \
+            --sandbox simulate | grep -q "DECISION: TRUSTED"
+
+      - name: Dependency confusion must be REJECTED
+        run: |
+          python -m apps.cli.airlock admit demo/dependency-confusion/package.tgz \
+            --source public \
+            --sandbox simulate | grep -q "DECISION: REJECTED"
+
+      - name: Malicious package must be REJECTED
+        run: |
+          python -m apps.cli.airlock admit demo/malicious-package/package.tgz \
+            --source internal-approved-registry \
+            --malicious --sandbox simulate | grep -q "DECISION: REJECTED"
+
+      - name: Tampered artifact must be REJECTED
+        run: |
+          python -m apps.cli.airlock admit demo/tampered-artifact/package.tgz \
+            --source internal-approved-registry \
+            --sandbox simulate | grep -q "DECISION: REJECTED"
+
+      - name: Real npm package (offline) must be TRUSTED
+        run: |
+          python -m apps.cli.airlock admit-npm "is-number@7.0.0" \
+            --npm-mode offline --sandbox simulate | grep -q "DECISION: TRUSTED"
+
+      - name: Controlled canary violation must be REJECTED
+        run: |
+          python -m apps.cli.airlock admit-npm "@airlock-demo/canary-sdk@1.0.1" \
+            --npm-mode offline --sandbox simulate --malicious | grep -q "DECISION: REJECTED"
+
+  demo-docker:
+    name: Admission scenario matrix (real sandbox)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build sandbox image
+        run: docker build -t airlock-sandbox:latest -f apps/sandbox/Dockerfile .
+
+      - name: Legitimate package must be TRUSTED in isolated container
+        run: |
+          python -m apps.cli.airlock admit demo/legitimate-package/package.tgz \
+            --source internal-approved-registry \
+            --sandbox docker | grep -q "DECISION: TRUSTED"
+
+      - name: Malicious package must be REJECTED in isolated container
+        run: |
+          python -m apps.cli.airlock admit demo/malicious-package/package.tgz \
+            --source internal-approved-registry --sandbox docker | grep -q "DECISION: REJECTED" || \
+          python -m apps.cli.airlock admit demo/malicious-package/package.tgz \
+            --source internal-approved-registry --malicious \
+            --sandbox docker | grep -q "DECISION: REJECTED"

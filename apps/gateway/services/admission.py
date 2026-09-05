@@ -58,6 +58,21 @@ class AdmissionPipeline:
         """Admit an artifact tarball. Returns the decision + passport + checks."""
         # REQUESTED -> RESOLVED
         artifact = self.resolver.resolve(path, declared_source=source)
+        return self._admit_artifact(artifact, expected_digest=expected_digest)
+
+    def admit_npm(
+        self,
+        spec: str,
+        npm_mode: str = "auto",
+        registry: str | None = None,
+        source: str = "internal-approved-registry",
+    ) -> dict:
+        """Admit a real npm ``name@version`` artifact through the full pipeline."""
+        artifact = self.resolver.resolve_npm(spec, npm_mode=npm_mode, registry=registry, source=source)
+        return self._admit_artifact(artifact)
+
+    def _admit_artifact(self, artifact: Artifact, expected_digest: str | None = None) -> dict:
+        # QUARANTINED
         artifact.state = ArtifactState.QUARANTINED
         quarantine_path = self.resolver.stage_to_quarantine(artifact)
         artifact.manifest_path = quarantine_path
@@ -77,6 +92,39 @@ class AdmissionPipeline:
                        "detail": vr.detail, "expected_digest": expected_digest, "computed_digest": artifact.digest})
 
         integrity = vr.integrity
+
+        # npm registry integrity (Subresource Integrity) verification
+        npm_integrity_checked = False
+        if artifact.ecosystem == "npm" and artifact.npm_integrity:
+            from .npm_resolver import verify_sha512_sri
+
+            sri_ok = verify_sha512_sri(artifact.manifest_path, artifact.npm_integrity)
+            npm_integrity_checked = True
+            if sri_ok:
+                checks.append({"name": "npm_integrity", "status": "verified",
+                               "detail": "npm Subresource Integrity (sha512) matches downloaded artifact"})
+            else:
+                integrity = IntegrityStatus.FAILED
+                checks.append({"name": "npm_integrity", "status": "failed",
+                               "detail": "npm SRI does NOT match downloaded artifact bytes"})
+
+        if artifact.ecosystem == "npm" and not artifact.npm_integrity:
+            checks.append({"name": "npm_integrity", "status": "unavailable",
+                           "detail": "no npm SRI provided by registry for this artifact"})
+
+        # Lifecycle script analysis
+        if artifact.ecosystem == "npm":
+            scripts = artifact.lifecycle_scripts or []
+            if scripts:
+                lifecycle_detail = f"npm lifecycle scripts present: {', '.join(scripts)} (executed only inside sandbox)"
+                live_status = "passed"
+            else:
+                lifecycle_detail = "no npm install-time lifecycle scripts (preinstall/install/postinstall/prepare)"
+                live_status = "passed"
+            checks.append({"name": "lifecycle", "status": live_status, "detail": lifecycle_detail})
+            artifact.observations.append(lifecycle_detail)
+        else:
+            checks.append({"name": "lifecycle", "status": "skipped", "detail": "non-npm artifact"})
 
         # Trusted-registry tamper check: if the same package+version is already
         # trusted internally, the exact bytes MUST match. A different digest
@@ -115,12 +163,16 @@ class AdmissionPipeline:
         sandbox_status = CheckStatus.SKIPPED
         sandbox_mode = "none"
         sandbox_result = {}
+        npm_install = artifact.ecosystem == "npm"
         if not any(hard_failures):
             try:
                 workspace = prepare_workspace(artifact, marker="admit")
-                result, sandbox_mode, sandbox_status = self.sandbox.execute(workspace, artifact)
+                result, sandbox_mode, sandbox_status = self.sandbox.execute(
+                    workspace, artifact, npm_install=npm_install
+                )
                 sandbox_result = result.to_dict() if result else {}
                 sandbox_result["mode"] = sandbox_mode
+                sandbox_result["npm_install"] = npm_install or None
                 checks.append({
                     "name": "sandbox",
                     "status": sandbox_status.value,
@@ -128,6 +180,10 @@ class AdmissionPipeline:
                 })
                 if result.error:
                     checks[-1]["detail"] = result.error
+                if result:
+                    for ev in result.events:
+                        if ev.kind not in ("behavior", "install", "lifecycle") or ev.detail not in artifact.observations:
+                            artifact.observations.append(f"{ev.kind}: {ev.detail}")
             except Exception as e:  # noqa: BLE001
                 sandbox_status = CheckStatus.FAILED
                 sandbox_result = {"error": str(e), "ok": False}
@@ -196,6 +252,8 @@ class AdmissionPipeline:
             "sandbox": sandbox_result,
             "lkg": lkg,
             "passport": passport.model_dump(),
+            "registry": artifact.registry or ("npm" if artifact.ecosystem == "npm" else None),
+            "tarball_url": artifact.tarball_url or None,
             "timestamp": _now(),
         }
 

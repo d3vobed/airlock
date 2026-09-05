@@ -49,3 +49,18 @@ rules:
     publisher: "naijanotify"
     allow_network: false
     allow_secrets: false
+
+  # Real npm packages evaluated by AIRLOCK (source is AIRLOCK's own resolver = approved-registry)
+  - name: is-number
+    package: "is-number"
+    source: "internal-approved-registry"
+    publisher: null
+    allow_network: false
+    allow_secrets: false
+
+  - name: airlock-canary
+    package: "@airlock-demo/canary-sdk"
+    source: "internal-approved-registry"
+    publisher: "airlock-demo"
+    allow_network: false
+    allow_secrets: false

@@ -259,6 +259,95 @@ setTimeout(() => {
             suspicious=suspicious,
         )
 
+    def run_npm_install(
+        self,
+        tarball_path: str | Path,
+        policy: SandboxPolicy | None = None,
+        image: str | None = None,
+        canary: str = "airlock-demo-canary",
+    ) -> SandboxResult:
+        """Perform a REAL ``npm install`` of the artifact inside an isolated container.
+
+        Mirrors what a developer's ``npm install`` would do, but constrained:
+          - outbound network disabled (network_mode none)
+          - no host secrets: only a deliberately set, non-sensitive canary env
+          - protected path /airlock-protected-canary exists (read-only) so
+            packages that probe it are observed attempting access
+          - throwaway workspace on tmpfs; container destroyed afterwards
+          - memory/CPU/time limits
+        """
+        policy = policy or DEFAULT_SANDBOX_POLICY
+        image = image or "airlock-sandbox:latest"
+        tarball = Path(tarball_path).resolve()
+
+        if not tarball.exists():
+            return SandboxResult(ok=False, error=f"tarball not found: {tarball}")
+
+        if not docker_available():
+            return SandboxResult(
+                ok=False,
+                error="Docker unavailable; FAILING CLOSED (artifact not trusted)",
+            )
+
+        try:
+            self._probe_image(image)
+        except Exception as e:  # noqa: BLE001
+            return SandboxResult(ok=False, error=f"failed to build sandbox image: {e}")
+
+        container_name = f"airlock-npm-{int(time.time() * 1000)}"
+
+        # Single readonly mount for the exact artifact. No host dirs, no ~/.ssh,
+        # no secrets. A throwaway /app tmpfs is the workspace.
+        cmd = [
+            "docker", "run",
+            "--rm",
+            "--name", container_name,
+            "--network", "none",
+            "--read-only",
+            "--cap-drop", "ALL",
+            "--security-opt", "no-new-privileges",
+            "-m", policy.memory_limit,
+            "--cpus", str(policy.cpu_limit),
+            "--tmpfs", "/tmp:rw,noexec,nosuid,size=128m",
+            "--tmpfs", "/app:rw,noexec,nosuid,size=256m",
+            "-v", f"{tarball}:/in/package.tgz:ro",
+            "-e", "AIRLOCK_SANDBOX=1",
+            "-e", f"AIRLOCK_CANARY={canary}",
+            "-e", "PATH=/usr/local/bin:/usr/bin:/bin",
+            "-e", "npm_config_ignore_scripts=false",
+            image,
+            "sh", "-c", _NPM_INSTALL_SCRIPT,
+        ]
+
+        try:
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=policy.timeout_seconds
+            )
+        except subprocess.TimeoutExpired as e:
+            subprocess.run(
+                ["docker", "rm", "-f", container_name],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+            )
+            return SandboxResult(
+                ok=False,
+                error=f"sandbox timed out after {policy.timeout_seconds}s during npm install",
+                stdout=_decode(e.stdout), stderr=_decode(e.stderr),
+            )
+        except FileNotFoundError:
+            return SandboxResult(ok=False, error="docker command not found; failing closed")
+
+        stdout = proc.stdout or ""
+        stderr = proc.stderr or ""
+        events = self._parse_events(stdout)
+        suspicious = _npm_install_suspicious(events, proc.returncode)
+        return SandboxResult(
+            ok=(proc.returncode == 0 and not suspicious),
+            events=events,
+            stdout=stdout,
+            stderr=stderr,
+            suspicious=suspicious,
+        )
+
     @staticmethod
     def _parse_events(stdout: str) -> list[SandboxEvent]:
         events: list[SandboxEvent] = []
@@ -272,6 +361,11 @@ setTimeout(() => {
                     events.append(SandboxEvent(kind, blocked, detail))
                 except json.JSONDecodeError:
                     continue
+            # npm prints lifecycle markers like "> pkg@1.0.0 postinstall"
+            elif line.startswith("> ") and "@" in line and " " in line[2:]:
+                events.append(
+                    SandboxEvent("lifecycle", True, f"npm lifecycle script executed: {line[2:].strip()}")
+                )
         return events
 
 
@@ -279,3 +373,38 @@ def _is_blocked(kind: str, detail: str) -> bool:
     blocked_markers = ("BLOCKED", "blocked", "no access", "cannot", "no secret-like")
     up = detail.lower()
     return any(m.lower() in up for m in blocked_markers)
+
+
+def _decode(raw) -> str:
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode(errors="replace")
+    return str(raw)
+
+
+def _npm_install_suspicious(events: list[SandboxEvent], returncode: int) -> bool:
+    """A real npm install is suspicious if a package event reported an
+    UNBLOCKED restricted attempt (env/ssh/network/filesystem)."""
+    for e in events:
+        if e.kind in ("env_access", "ssh_access", "network", "filesystem") and not e.blocked:
+            return True
+    return False
+
+
+_NPM_INSTALL_SCRIPT = r"""
+set +e
+mkdir -p /app/ws /app/pt /tmp/npm-cache
+cd /app/ws || exit 1
+# Create a protected canary path to detect filesystem escape attempts.
+echo 'protected-canary' > /app/pt/airlock-protected-canary
+npm init -y >/dev/null 2>&1
+echo '--- npm install (isolated) ---'
+ALCN_PROTECTED=/app/pt/airlock-protected-canary npm install /in/package.tgz \
+  --foreground-scripts --ignore-scripts=false --no-audit --no-fund \
+  --cache /tmp/npm-cache 2>&1
+code=$?
+echo "AIRCRAFT_EVENT {\"kind\":\"install\",\"detail\":\"npm install exit code $code\",\"blocked\":true}"
+echo "AIRLOCK_NPM_EXIT=$code"
+exit 0
+"""

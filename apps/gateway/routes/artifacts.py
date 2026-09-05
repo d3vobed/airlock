@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from ..deps import app_state
-from ..schemas import AdmitRequest
+from ..schemas import AdmitNpmRequest, AdmitRequest
 
 router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 
@@ -24,6 +24,8 @@ class AdmitResponse(BaseModel):
     lkg: dict | None
     passport: dict
     timestamp: str
+    registry: str | None = None
+    tarball_url: str | None = None
 
 
 @router.post("/admit", response_model=AdmitResponse)
@@ -41,6 +43,20 @@ def admit(req: AdmitRequest) -> AdmitResponse:
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/admit/npm", response_model=AdmitResponse)
+def admit_npm(req: AdmitNpmRequest) -> AdmitResponse:
+    """Admit a real npm package (name@version) through the full pipeline."""
+    try:
+        result = app_state.pipeline(sandbox_mode=req.sandbox_mode).admit_npm(
+            req.spec, npm_mode=req.npm_mode, source=req.source
+        )
+        return AdmitResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 

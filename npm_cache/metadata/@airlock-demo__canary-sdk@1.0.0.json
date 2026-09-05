@@ -1,0 +1,18 @@
+{
+  "ecosystem": "npm",
+  "package": "@airlock-demo/canary-sdk",
+  "version": "1.0.0",
+  "registry": "npm",
+  "registry_url": "https://registry.npmjs.org",
+  "tarball_url": "https://registry.npmjs.org/@airlock-demo/canary-sdk/-/canary-sdk-1.0.0.tgz",
+  "npm_integrity": "",
+  "publisher": "airlock-demo",
+  "dependencies": {},
+  "lifecycle_scripts": {
+    "postinstall": "node canary.js"
+  },
+  "dist_tags": {},
+  "sha1": "",
+  "integrity_verified": false,
+  "mode": "offline-cached"
+}

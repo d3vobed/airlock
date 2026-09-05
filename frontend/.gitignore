@@ -1,0 +1,4 @@
+# frontend build deps (installed via `npm install` in frontend/)
+node_modules/
+.next/
+out/

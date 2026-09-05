@@ -16,6 +16,13 @@ class AdmitRequest(BaseModel):
     malicious: bool = Field(False, description="Demo flag: mark package as malicious for sandbox simulation")
 
 
+class AdmitNpmRequest(BaseModel):
+    spec: str = Field(description="npm spec: name@version, e.g. 'is-number@7.0.0'")
+    npm_mode: str = Field("auto", description="offline | live | auto")
+    source: str = Field("internal-approved-registry", description="Trust label for artifacts resolved by the org gateway")
+    sandbox_mode: str | None = Field(None, description="Sandbox isolation mode: auto | docker | simulate")
+
+
 class VerifyRequest(BaseModel):
     path: str
     expected_digest: str

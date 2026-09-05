@@ -9,6 +9,12 @@ Chooses the isolation mode for executing an artifact's install/build behavior:
 
 When Docker is available it is always preferred. If sandbox mode is 'docker'
 and Docker is unavailable, the artifact FAILS CLOSED (it is not trusted).
+
+Two execution forms:
+  - probe         : runs AIRLOCK's self-contained behavior probe against the
+                    unpacked artifact workspace (used by the fully synthetic demos).
+  - npm_install   : performs a REAL ``npm install <tarball>`` inside the isolated
+                    container so the artifact's actual lifecycle scripts run.
 """
 from __future__ import annotations
 
@@ -21,16 +27,9 @@ from core.models.passport import CheckStatus
 
 from ..config import settings
 from ...sandbox.policy import SandboxPolicy
-from ...sandbox.runner import SandboxResult, SandboxRunner, docker_available
+from ...sandbox.runner import SandboxEvent, SandboxResult, SandboxRunner, docker_available
 
 SIMULATED_BLOCKS = [
-    {"kind": "env_access", "blocked": True, "detail": "environment/secret access attempt BLOCKED (simulated)"},
-    {"kind": "ssh_access", "blocked": True, "detail": "~/.ssh discovery BLOCKED (simulated)"},
-    {"kind": "network", "blocked": True, "detail": "outbound network attempt BLOCKED (simulated)"},
-    {"kind": "filesystem", "blocked": True, "detail": "write outside workspace BLOCKED (simulated)"},
-]
-
-SIMULATED_UNBLOCKED = [
     {"kind": "env_access", "blocked": True, "detail": "environment/secret access attempt BLOCKED (simulated)"},
     {"kind": "ssh_access", "blocked": True, "detail": "~/.ssh discovery BLOCKED (simulated)"},
     {"kind": "network", "blocked": True, "detail": "outbound network attempt BLOCKED (simulated)"},
@@ -53,38 +52,51 @@ class SandboxService:
             return "docker" if docker_available() else "simulate"
         return self.mode
 
-    def execute(self, workspace: str | Path, artifact: Artifact | None = None) -> tuple[SandboxResult, str, CheckStatus]:
+    def execute(
+        self,
+        workspace: str | Path,
+        artifact: Artifact | None = None,
+        npm_install: bool = False,
+    ) -> tuple[SandboxResult, str, CheckStatus]:
         """Run the artifact's behavior. Returns (result, mode, status)."""
         mode = self._effective_mode()
 
         if mode == "docker":
-            result = self.runner.run(workspace)
+            if npm_install and artifact:
+                result = self.runner.run_npm_install(artifact.manifest_path)
+            else:
+                result = self.runner.run(workspace)
             if result.error:
                 return result, "docker", CheckStatus.FAILED
             status = CheckStatus.PASSED if result.ok else CheckStatus.FAILED
             return result, "docker", status
 
         if mode == "simulate":
-            result = self._simulate(artifact)
+            result = self._simulate(artifact, npm_install=npm_install)
             status = CheckStatus.PASSED if result.ok else CheckStatus.FAILED
             return result, "simulate", status
 
         # Unknown mode: fail closed.
         return SandboxResult(ok=False, error=f"unknown sandbox mode '{mode}'"), mode, CheckStatus.FAILED
 
-    def _simulate(self, artifact: Artifact | None) -> SandboxResult:
-        from ...sandbox.runner import SandboxEvent
-
+    def _simulate(self, artifact: Artifact | None, npm_install: bool = False) -> SandboxResult:
         if self.malicious:
             # Malicious demo package: report blocked attempts, but also flag the
             # package supplied a malicious install script -> suspicious/reject.
-            events_dict = SIMULATED_BLOCKS + [
+            events_dict = list(SIMULATED_BLOCKS) + [
                 {"kind": "behavior", "blocked": True, "detail": "malicious install script detected (demo)"}
             ]
             suspicious = True
             ok = False
         else:
-            events_dict = SIMULATED_BLOCKS
+            events_dict = list(SIMULATED_BLOCKS)
+            if npm_install and artifact:
+                scripts = getattr(artifact, "policy", {}).get("lifecycle_scripts", [])
+                if scripts:
+                    events_dict.append(
+                        {"kind": "lifecycle", "blocked": True,
+                         "detail": f"npm lifecycle executed (simulated): {', '.join(scripts)}"}
+                    )
             suspicious = False
             ok = True
 

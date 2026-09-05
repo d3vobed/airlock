@@ -58,6 +58,24 @@ def cmd_admit(args) -> None:
         _print(json.dumps(result, indent=2, default=str))
 
 
+def cmd_admit_npm(args) -> None:
+    _print(f"AIRLOCK npm admission — {args.spec} (mode={args.npm_mode})\n")
+    pipeline = AdmissionPipeline(sandbox_mode=args.sandbox, malicious=args.malicious)
+    result = pipeline.admit_npm(args.spec, npm_mode=args.npm_mode, source="internal-approved-registry")
+
+    _print(_table_checks(result["checks"]))
+    _print(f"\nECOSYSTEM: npm   REGISTRY: {result.get('registry')}")
+    _print(f"TARBALL: {result.get('tarball_url')}")
+    if result["passport"].get("npm_integrity"):
+        _print(f"NPM SRI: {result['passport']['npm_integrity']}")
+    _print(f"\nDECISION: {result['decision']}")
+    if result.get("reason"):
+        _print(f"REASON: {result['reason']}")
+    _print(f"\nARTIFACT ID: {result['artifact_id']}")
+    if args.json:
+        _print(json.dumps(result, indent=2, default=str))
+
+
 def _table_checks(checks: list[dict]) -> str:
     lines = []
     markers = {"passed": "✓", "failed": "✗", "verified": "✓", "unavailable": "?", "skipped": "–", "failed'": "✗"}
@@ -207,6 +225,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--malicious", action="store_true", help="demo: treat as malicious for sandbox simulation")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_admit)
+
+    sp = sub.add_parser("admit-npm", help="Admit a real npm package (name@version)")
+    sp.add_argument("spec")
+    sp.add_argument("--npm-mode", default="auto", choices=["offline", "live", "auto"])
+    sp.add_argument("--sandbox", default="auto", choices=["auto", "docker", "simulate"])
+    sp.add_argument("--malicious", action="store_true", help="demo: treat as malicious for sandbox simulation")
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_admit_npm)
 
     sp = sub.add_parser("verify", help="Verify an artifact digest")
     sp.add_argument("artifact")

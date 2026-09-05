@@ -46,6 +46,15 @@ class Artifact(BaseModel):
     sandbox_result: list[dict] = Field(default_factory=list)
     reason: str | None = None
 
+    # Ecosystem metadata (npm/pypi/...)
+    ecosystem: str = "generic"
+    registry: str = ""
+    tarball_url: str = ""
+    npm_integrity: str = ""
+    lifecycle_scripts: list[str] = Field(default_factory=list)
+    dependencies: dict = Field(default_factory=dict)
+    observations: list[str] = Field(default_factory=list)
+
     @property
     def identity(self) -> str:
         return self.artifact_id or f"{self.package}@{self.version}"

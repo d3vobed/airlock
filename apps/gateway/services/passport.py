@@ -49,6 +49,13 @@ class PassportService:
             digest=artifact.digest,
             source=artifact.source,
             publisher=artifact.publisher,
+            ecosystem=artifact.ecosystem,
+            registry=artifact.registry,
+            tarball_url=artifact.tarball_url,
+            npm_integrity=artifact.npm_integrity,
+            lifecycle_scripts=artifact.lifecycle_scripts,
+            observations=artifact.observations,
+            dependencies=artifact.dependencies,
             identity_status=identity_status,
             integrity=integrity,
             provenance=provenance,
@@ -75,5 +82,12 @@ class PassportService:
 
     @staticmethod
     def verify_digest(passport, computed_digest: str) -> bool:
-        """A passport is invalidated if the artifact bytes change."""
-        return artifact_id(computed_digest) == passport.artifact_id
+        """A passport is invalidated if the artifact bytes change.
+
+        Accepts either a Passport instance or its model_dump() dict.
+        """
+        if isinstance(passport, Passport):
+            passport_id = passport.artifact_id
+        else:
+            passport_id = (passport or {}).get("artifact_id")
+        return artifact_id(computed_digest) == passport_id

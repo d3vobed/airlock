@@ -53,6 +53,17 @@ def build() -> None:
     digests["tampered-artifact"] = sha256_file(tampered)
     print(f"built {tampered.relative_to(DEMO)}  sha256:{digests['tampered-artifact'][:16]}…")
 
+    # Controlled npm canary package (also used as offline npm fixtures).
+    npm_dir = DEMO / "controlled-npm-package"
+    npm_fixtures = Path(npm_dir.parent.parent) / "npm_cache" / "fixtures"
+    npm_fixtures.mkdir(parents=True, exist_ok=True)
+    make_tarball(npm_dir, npm_fixtures / "@airlock-demo__canary-sdk@1.0.0.tgz")
+    make_tarball(npm_dir / "version-1.0.1", npm_fixtures / "@airlock-demo__canary-sdk@1.0.1.tgz")
+    digests["canary-1.0.0"] = sha256_file(npm_fixtures / "@airlock-demo__canary-sdk@1.0.0.tgz")
+    digests["canary-1.0.1"] = sha256_file(npm_fixtures / "@airlock-demo__canary-sdk@1.0.1.tgz")
+    print(f"built offline npm fixture @airlock-demo/canary-sdk@1.0.0 (sha256:{digests['canary-1.0.0'][:16]}…)")
+    print(f"built offline npm fixture @airlock-demo/canary-sdk@1.0.1 (sha256:{digests['canary-1.0.1'][:16]}…)")
+
     digests_path = DEMO / "digests.json"
     digests_path.write_text(json.dumps(digests, indent=2) + "\n")
     print(f"wrote {digests_path.relative_to(DEMO.parent)}")

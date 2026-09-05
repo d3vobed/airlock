@@ -1,0 +1,12 @@
+{
+  "name": "@airlock-demo/canary-sdk",
+  "version": "1.0.1",
+  "description": "Controlled AIRLOCK canary package (policy-violation demo). SAFE: attempts one network probe to a non-routable host; reads no secrets, exfiltrates nothing.",
+  "main": "index.js",
+  "publisher": "airlock-demo",
+  "license": "MIT",
+  "files": ["index.js", "canary.js"],
+  "scripts": {
+    "postinstall": "node canary.js --network"
+  }
+}

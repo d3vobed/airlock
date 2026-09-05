@@ -1,0 +1,19 @@
+{
+  "ecosystem": "npm",
+  "package": "is-number",
+  "version": "7.0.0",
+  "registry": "npm",
+  "registry_url": "https://registry.npmjs.org",
+  "tarball_url": "https://registry.npmjs.org/is-number/-/is-number-7.0.0.tgz",
+  "npm_integrity": "sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==",
+  "publisher": null,
+  "dependencies": {},
+  "lifecycle_scripts": {
+    "test": "mocha"
+  },
+  "dist_tags": {
+    "latest": "7.0.0"
+  },
+  "sha1": "7535345b896734d5f80c4d06c50955527a14f12b",
+  "integrity_verified": true
+}

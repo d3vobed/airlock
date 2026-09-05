@@ -6,7 +6,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-from .config import REPO_ROOT, Settings
+from .config import REPO_ROOT, Settings, settings
 
 
 def _now() -> str:
@@ -22,7 +22,7 @@ class Storage:
     """
 
     def __init__(self, path: str | None = None):
-        self.path = path or str(REPO_ROOT / "airlock.db")
+        self.path = path or settings.db_path or str(REPO_ROOT / "airlock.db")
         self._init()
 
     def connect(self) -> sqlite3.Connection:

@@ -1,0 +1,12 @@
+{
+  "name": "@airlock-demo/canary-sdk",
+  "version": "1.0.0",
+  "description": "Controlled AIRLOCK canary package (benign). Published on npm as @airlock-demo/canary-sdk. SAFE demo fixture: reads a non-sensitive canary env, probes a protected canary path, no network.",
+  "main": "index.js",
+  "publisher": "airlock-demo",
+  "license": "MIT",
+  "files": ["index.js", "canary.js"],
+  "scripts": {
+    "postinstall": "node canary.js"
+  }
+}

@@ -33,6 +33,15 @@ class Passport(BaseModel):
     source: str
     publisher: str | None = None
 
+    # Ecosystem extension (npm / pypi / ...)
+    ecosystem: str = "generic"
+    registry: str = ""
+    tarball_url: str = ""
+    npm_integrity: str = ""
+    lifecycle_scripts: list[str] = Field(default_factory=list)
+    observations: list[str] = Field(default_factory=list)
+    dependencies: dict = Field(default_factory=dict)
+
     identity_status: CheckStatus = CheckStatus.SKIPPED
     integrity: IntegrityStatus = IntegrityStatus.UNAVAILABLE
     provenance: IntegrityStatus = IntegrityStatus.UNAVAILABLE
