@@ -57,7 +57,8 @@ export interface PassportRecord {
   status: string;
   timestamp: string;
   provenance?: string;
-  sandbox?: { mode?: string; ok?: boolean };
+  sandbox?: { mode?: string };
+  sandbox_status?: string;
   checks?: { name: string; status: string; detail: string }[];
 }
 
