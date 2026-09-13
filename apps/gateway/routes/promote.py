@@ -39,7 +39,7 @@ def rollback(artifact_id: str):
     return result
 
 
-@router.post("/rollback/{package}")
+@router.post("/rollback/{package:path}")
 def rollback_by_package(package: str):
     """Expose LKG fallback for a package by name."""
     result = app_state.fallback_svc.rollback(package)
