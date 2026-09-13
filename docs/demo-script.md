@@ -9,7 +9,7 @@ step, which is optional.
 - Registry state reset (each run):
 
 ```bash
-cd /home/obx/airlock
+cd path/to/your/airlock/checkout
 rm -f airlock.db
 ```
 
