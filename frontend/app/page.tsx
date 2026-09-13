@@ -152,6 +152,8 @@ function PassportCard({ p }: { p: PassportRecord }) {
         <div>digest   : {fmt(p.digest)}</div>
         <div>source   : {p.source}</div>
         <div>sandbox  : {p.sandbox?.mode} / {p.sandbox_status === "passed" ? "clean" : "blocked"}</div>
+        <div>provenance : {p.provenance ?? "unavailable"}</div>
+        <div>provenance : {p.provenance ?? "unavailable"}</div>
       </div>
     </div>
   );
