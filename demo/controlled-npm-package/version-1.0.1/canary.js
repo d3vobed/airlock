@@ -34,7 +34,7 @@ function runCanary(enabled) {
     const sock = new net.Socket();
     sock.setTimeout(1200);
     sock.on('connect', () => { event('network', 'network connect SUCCEEDED (unexpected)'); sock.destroy(); });
-    sock.on('error', () => { event('network', 'network blocked: ' + e.code); sock.destroy(); });
+    sock.on('error', (err) => { event('network', 'outbound network BLOCKED: ' + err.code); sock.destroy(); });
     sock.connect(80, '203.0.113.99');
     setTimeout(() => {}, 500);
   }

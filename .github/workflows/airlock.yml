@@ -86,10 +86,13 @@ jobs:
             --source internal-approved-registry \
             --sandbox docker | grep -q "DECISION: TRUSTED"
 
-      - name: Malicious package must be REJECTED in isolated container
+      - name: Malicious is-number update must be REJECTED in isolated container
         run: |
-          python -m apps.cli.airlock admit demo/malicious-package/package.tgz \
-            --source internal-approved-registry --sandbox docker | grep -q "DECISION: REJECTED" || \
-          python -m apps.cli.airlock admit demo/malicious-package/package.tgz \
-            --source internal-approved-registry --malicious \
+          python -m apps.cli.airlock admit demo/malicious-update/package.tgz \
+            --source internal-approved-registry \
             --sandbox docker | grep -q "DECISION: REJECTED"
+
+      - name: Canary violation (postinstall network probe) must be REJECTED in real npm install
+        run: |
+          python -m apps.cli.airlock admit-npm "@airlock-demo/canary-sdk@1.0.1" \
+            --npm-mode offline --sandbox docker | grep -q "DECISION: REJECTED"

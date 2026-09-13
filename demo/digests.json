@@ -1,9 +1,9 @@
 {
   "legitimate-package": "7922a88a95a70d260d48b2759adcfc110eba4da25ad7f52e785b002f66d7bc5e",
-  "malicious-package": "0668fab55c9bff945ee6c3ab39720be73fa5c830ca1d2c658a44d04af8e3dca5",
-  "dependency-confusion": "bb7abddc4a75bc55d8a473a6895b5818980f6953226ae64d3677aeb1a61d2550",
   "malicious-update": "04931e9cd660cc16a4a9cdd287bcf5ba22f4fc733a1d538cbd4b7a3f422c843b",
   "tampered-artifact": "d6ce85e08d4a306d679178aa5f5c8e4d3d87704a095163c313c12221191951dc",
+  "malicious-package": "0668fab55c9bff945ee6c3ab39720be73fa5c830ca1d2c658a44d04af8e3dca5",
+  "dependency-confusion": "bb7abddc4a75bc55d8a473a6895b5818980f6953226ae64d3677aeb1a61d2550",
   "canary-1.0.0": "cd6272854cadf04cfec8a2b93a00f4cea31c73bb2a8ab61c26b56ebd910733c0",
-  "canary-1.0.1": "a454c30a1fa7393350b731b632c64ffe0cc0e881e8fd243338a1880581fcb99b"
+  "canary-1.0.1": "51e0741c3f4f17674cd5bd22cae646ea8f63e0e56029fcfb61d1b3c330358b27"
 }

@@ -383,10 +383,19 @@ def _decode(raw) -> str:
 
 
 def _npm_install_suspicious(events: list[SandboxEvent], returncode: int) -> bool:
-    """A real npm install is suspicious if a package event reported an
-    UNBLOCKED restricted attempt (env/ssh/network/filesystem)."""
+    """A real npm install is suspicious when a restricted attempt was made.
+
+    Approved packages are admitted with allow_network/allow_secrets false, so
+    policy forbids outbound network: ANY network attempt is a violation even
+    though the container firewall blocks it. Our own AIRLOCK_CANARY
+    instrumentation read is permitted; everything else denied.
+    """
     for e in events:
-        if e.kind in ("env_access", "ssh_access", "network", "filesystem") and not e.blocked:
+        if e.kind == "network":
+            return True
+        if e.kind in ("ssh_access", "filesystem") and not e.blocked:
+            return True
+        if e.kind == "env_access" and "AIRLOCK_CANARY" not in e.detail and not e.blocked:
             return True
     return False
 
