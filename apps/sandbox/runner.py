@@ -107,11 +107,14 @@ if (leak.length > 0) {
   record('env_access', 'no secret-like environment variables present in sandbox');
 }
 
-// 2) SSH discovery
-const sshPaths = ['/root/.ssh', path.join(os.homedir(), '.ssh'), '/home', '/etc/ssh'];
+// 2) SSH / credential discovery
+// Only locations that would reveal private credentials count. The image
+// contains /home and /etc/ssh, so probing those must NOT be flagged as
+// suspension: presence of the directory is not presence of a credential.
+const sshPaths = ['/root/.ssh', path.join(os.homedir(), '.ssh')];
 for (const p of sshPaths) {
-  try { fs.accessSync(p); record('ssh_access', 'attempted to inspect ' + p); }
-  catch (e) { record('ssh_access', 'no access to ' + p + ' (blocked)'); }
+  try { fs.accessSync(p); record('ssh_access', 'attempted to inspect ' + p + ' (found)'); }
+  catch (e) { record('ssh_access', 'no ssh credentials in ' + p + ' (blocked)'); }
 }
 
 // 3) outbound network attempt
