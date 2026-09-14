@@ -422,18 +422,24 @@ ALCN_PROTECTED=/app/pt/airlock-protected-canary npm install /in/package.tgz \
 inst=$?
 echo "AIRCRAFT_EVENT {\"kind\":\"install\",\"detail\":\"npm install exit code $inst\",\"blocked\":true}"
 # npm 11+ gates build scripts by default; run the admitted package's own
-# lifecycle scripts explicitly so the artifact's real behavior is observed.
+# lifecycle scripts directly (npm run can hang waiting on child pipes), so
+# the artifact's real behavior is observed deterministically.
 if [ -n "$AIRLOCK_PKG" ]; then
   PKG_DIR="$AIRLOCK_PKG"
 else
   PKG_DIR=$(find /app/ws/node_modules -maxdepth 3 -name package.json 2>/dev/null | head -n1 | xargs dirname 2>/dev/null)
 fi
-if [ -n "$PKG_DIR" ] && [ -f "$PKG_DIR/package.json" ]; then
-  ( cd "$PKG_DIR" && ALCN_PROTECTED=/app/pt/airlock-protected-canary \
-      npm run preinstall --if-present --foreground-scripts && \
-      npm run install --if-present --foreground-scripts && \
-      npm run postinstall --if-present --foreground-scripts )
-fi
+run_lifecycle() {
+  name="$1"
+  [ -n "$PKG_DIR" ] || return 0
+  script=$(node -p "try{var p=require('$PKG_DIR/package.json').scripts||{};process.stdout.write((p['$name']||'').toString())}catch(e){process.stdout.write('')}" 2>/dev/null)
+  [ -n "$script" ] || return 0
+  echo "> $PKG_DIR $name> $script"
+  ( cd "$PKG_DIR" && ALCN_PROTECTED=/app/pt/airlock-protected-canary sh -c "$script" )
+}
+run_lifecycle preinstall
+run_lifecycle install
+run_lifecycle postinstall
 echo "AIRLOCK_NPM_EXIT=$inst"
 exit 0
 """
