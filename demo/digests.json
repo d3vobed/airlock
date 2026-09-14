@@ -5,5 +5,22 @@
   "dependency-confusion": "392a94b6cb7a0d2bfe93721b561e8fac479faa036a67e0c193e7ab31e6da8a9b",
   "tampered-artifact": "d6ce85e08d4a306d679178aa5f5c8e4d3d87704a095163c313c12221191951dc",
   "canary-1.0.0": "648deeea1b799a180de0bed6985bd07b82dedad6f8ca86f4e8a04e301aaaa51e",
-  "canary-1.0.1": "5ac1b6883e47554187c612549910d16642027a3d3d34f73a1a4d01f71bc8fa07"
+  "canary-1.0.1": "5ac1b6883e47554187c612549910d16642027a3d3d34f73a1a4d01f71bc8fa07",
+  "registry-pins": {
+    "is-number@7.0.0": {
+      "sha256": "7b75c1057198cf97696909a9bee176c9c5e9bcb5b03bf3ecef2f484defadd51e",
+      "sha512": "sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==",
+      "sha1": "7535345b896734d5f80c4d06c50955527a14f12b"
+    },
+    "@airlock-demo/canary-sdk@1.0.0": {
+      "sha256": "648deeea1b799a180de0bed6985bd07b82dedad6f8ca86f4e8a04e301aaaa51e",
+      "sha512": "sha512-LBA2c8Y3oF4qZNf2SGt9ThgwjOFPaZFZWJozkQeHimi2Uhq4qAsQgCBhdXmyBcnilhV27bJ6gqS/GtPmKGEPJw==",
+      "sha1": "2acee899c21f5ea92942ecb855c47c9b71d29dde"
+    },
+    "@airlock-demo/canary-sdk@1.0.1": {
+      "sha256": "5ac1b6883e47554187c612549910d16642027a3d3d34f73a1a4d01f71bc8fa07",
+      "sha512": "sha512-gWhiFbXD+vZkFausUp+ZUXydRG7uo1wVD6R/I9Y15UhT5JVk+iN77/xVYNbEk6Hvg70Nucc+aGNfkL4FK/f8+w==",
+      "sha1": "1ae11d595f06ae56e36288c17aefc0b0e039b7b3"
+    }
+  }
 }

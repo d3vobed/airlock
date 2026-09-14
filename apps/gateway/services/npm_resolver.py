@@ -34,6 +34,17 @@ from core.hashing.sha256 import sha256_file
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 NPM_CACHE_DEFAULT = REPO_ROOT / "npm_cache"
+DIGESTS_FILE = REPO_ROOT / "demo" / "digests.json"
+
+
+def load_authoritative_pins() -> dict:
+    """Load the canonical byte-level pins from demo/digests.json (registry-pins)."""
+    if not DIGESTS_FILE.exists():
+        return {}
+    try:
+        return json.loads(DIGESTS_FILE.read_text()).get("registry-pins", {})
+    except (json.JSONDecodeError, OSError):
+        return {}
 
 
 @dataclass
@@ -162,7 +173,15 @@ class NpmResolver:
             return None
         data = json.loads(meta.read_text())
         # Recompute the digest of the exact cached bytes to guard fixture drift.
-        data["digest"] = sha256_file(tgz)
+        digest = sha256_file(tgz)
+        # Enforce authoritative byte-level pins (demo/digests.json) when present.
+        pin = load_authoritative_pins().get(f"{name}@{version}")
+        if pin and pin.get("sha256") and pin["sha256"] != digest:
+            raise RuntimeError(
+                f"offline fixture TAMPERED for {name}@{version}: bytes {digest[:16]}… "
+                f"!= authoritative pin {pin['sha256'][:16]}…. Refusing to reuse."
+            )
+        data["digest"] = digest
         data["local_path"] = str(tgz)
         data["mode"] = "offline-cached"
         return NpmResolution(**data)
