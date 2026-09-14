@@ -61,6 +61,8 @@ def test_controlled_npm_package_benign_trusted(sandbox_mode):
     )
     assert result["decision"] == "TRUSTED"
     assert result["passport"]["lifecycle_scripts"] == ["postinstall"]
+    # Authoritative pin from demo/digests.json drives integrity=verified.
+    assert result["passport"]["integrity"] == "verified"
 
 
 def test_controlled_npm_package_violation_rejected(sandbox_mode):

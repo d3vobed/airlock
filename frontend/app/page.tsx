@@ -179,6 +179,7 @@ function useAdmit() {
               spec: case_.npm.spec,
               npm_mode: case_.npm.mode,
               sandbox_mode: "simulate",
+              malicious: !!case_.malicious,
             })
           : await api.admit({
               path: case_.path!,

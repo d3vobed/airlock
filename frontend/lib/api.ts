@@ -102,6 +102,7 @@ export const api = {
     npm_mode: "offline" | "live" | "auto";
     source?: string;
     sandbox_mode?: string;
+    malicious?: boolean;
   }) =>
     request<AdmissionResponse>("/artifacts/admit/npm", {
       method: "POST",

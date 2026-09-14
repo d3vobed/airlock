@@ -50,7 +50,9 @@ def admit(req: AdmitRequest) -> AdmitResponse:
 def admit_npm(req: AdmitNpmRequest) -> AdmitResponse:
     """Admit a real npm package (name@version) through the full pipeline."""
     try:
-        result = app_state.pipeline(sandbox_mode=req.sandbox_mode).admit_npm(
+        result = app_state.pipeline(
+            sandbox_mode=req.sandbox_mode, malicious=req.malicious
+        ).admit_npm(
             req.spec, npm_mode=req.npm_mode, source=req.source
         )
         return AdmitResponse(**result)
