@@ -377,7 +377,7 @@ setTimeout(() => {
 
 
 def _is_blocked(kind: str, detail: str) -> bool:
-    blocked_markers = ("BLOCKED", "blocked", "no access", "cannot", "no secret-like")
+    blocked_markers = ("BLOCKED", "blocked", "no access", "cannot", "no secret-like", "allowed demo")
     up = detail.lower()
     return any(m.lower() in up for m in blocked_markers)
 

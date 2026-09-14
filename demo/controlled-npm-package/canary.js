@@ -23,7 +23,7 @@ function runCanary(enabled) {
   const protectedPath = process.env.ALCN_PROTECTED || '/airlock-protected-canary';
   try {
     fs.accessSync(protectedPath);
-    event('filesystem', 'reached protected canary path ' + protectedPath);
+    event('filesystem', 'read designated AIRLOCK canary path (allowed demo)');
   } catch (e) {
     event('filesystem', 'blocked from protected canary path: ' + e.code);
   }
