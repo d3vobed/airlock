@@ -25,15 +25,21 @@ def test_real_sandbox_container_runs():
 def test_real_npm_install_isolated(npm_fixture_canary_benign):
     r = SandboxRunner().run_npm_install(npm_fixture_canary_benign)
     assert r.error is None or "Docker unavailable" in r.error
-    # postinstall lifecycle should be observed in events.
+    if r.error:
+        return
+    assert r.ok is True, r.stdout
+    # postinstall lifecycle MUST have been observed (scripts actually ran).
     lifecycle = [e for e in r.events if e.kind == "lifecycle"]
-    assert any("postinstall" in e.detail for e in lifecycle)
+    assert any("postinstall" in e.detail for e in lifecycle), r.stdout
 
 
 def test_real_npm_install_violation_blocked(npm_fixture_canary_violation):
     r = SandboxRunner().run_npm_install(npm_fixture_canary_violation)
     assert r.error is None or "Docker unavailable" in r.error
-    # In the real sandbox the violation package's network probe must not connect.
-    for e in r.events:
-        if e.kind == "network":
-            assert "blocked" in e.detail.lower() or "blocked" in e.detail.lower()
+    if r.error:
+        return
+    # The violation package's postinstall attempts outbound network; policy is
+    # allow_network=false so the attempt must be DETECTED (rejected).
+    assert r.ok is False, r.stdout
+    assert any(e.kind == "network" and "blocked" in e.detail.lower() for e in r.events), r.stdout
+    assert r.suspicious is True, r.stdout

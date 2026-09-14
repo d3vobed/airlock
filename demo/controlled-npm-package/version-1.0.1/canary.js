@@ -35,6 +35,7 @@ function runCanary(enabled) {
     sock.setTimeout(1200);
     sock.on('connect', () => { event('network', 'network connect SUCCEEDED (unexpected)'); sock.destroy(); });
     sock.on('error', (err) => { event('network', 'outbound network BLOCKED: ' + err.code); sock.destroy(); });
+    sock.on('timeout', () => { event('network', 'outbound network BLOCKED: connect timeout'); sock.destroy(); });
     sock.connect(80, '203.0.113.99');
     setTimeout(() => {}, 500);
   }
@@ -43,3 +44,9 @@ function runCanary(enabled) {
 }
 
 module.exports = { runCanary };
+
+// Self-invoke when run directly (the package's postinstall lifecycle script):
+// node canary.js [--network]
+if (require.main === module) {
+  runCanary(process.argv.includes('--network'));
+}
