@@ -69,7 +69,17 @@ class AdmissionPipeline:
     ) -> dict:
         """Admit a real npm ``name@version`` artifact through the full pipeline."""
         artifact = self.resolver.resolve_npm(spec, npm_mode=npm_mode, registry=registry, source=source)
-        return self._admit_artifact(artifact)
+        # Offline fixtures resolve from committed bytes whose authoritative
+        # sha256 pin is recorded in demo/digests.json — use it as the expected
+        # digest so the passport reports integrity=verified, never guessed.
+        expected_digest = None
+        if npm_mode in ("offline", "auto"):
+            from .npm_resolver import load_authoritative_pins
+
+            pin = load_authoritative_pins().get(f"{artifact.package}@{artifact.version}")
+            if pin and pin.get("sha256"):
+                expected_digest = pin["sha256"]
+        return self._admit_artifact(artifact, expected_digest=expected_digest)
 
     def _admit_artifact(self, artifact: Artifact, expected_digest: str | None = None) -> dict:
         # QUARANTINED
