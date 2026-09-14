@@ -63,7 +63,9 @@ class SandboxService:
 
         if mode == "docker":
             if npm_install and artifact:
-                result = self.runner.run_npm_install(artifact.manifest_path)
+                result = self.runner.run_npm_install(
+                    artifact.manifest_path, pkg=artifact.package
+                )
             else:
                 result = self.runner.run(workspace)
             if result.error:

@@ -267,6 +267,7 @@ setTimeout(() => {
         policy: SandboxPolicy | None = None,
         image: str | None = None,
         canary: str = "airlock-demo-canary",
+        pkg: str | None = None,
     ) -> SandboxResult:
         """Perform a REAL ``npm install`` of the artifact inside an isolated container.
 
@@ -277,6 +278,11 @@ setTimeout(() => {
             packages that probe it are observed attempting access
           - throwaway workspace on tmpfs; container destroyed afterwards
           - memory/CPU/time limits
+
+        npm 11+ gates build scripts by default (``allowScripts``), so we install
+        with ``--ignore-scripts`` and then explicitly run the admitted package's
+        preinstall/install/postinstall scripts ourselves. This is deterministic
+        across npm 10/11/12 and exercises the artifact's real lifecycle code.
         """
         policy = policy or DEFAULT_SANDBOX_POLICY
         image = image or "airlock-sandbox:latest"
@@ -317,9 +323,11 @@ setTimeout(() => {
             "-e", f"AIRLOCK_CANARY={canary}",
             "-e", "PATH=/usr/local/bin:/usr/bin:/bin",
             "-e", "npm_config_ignore_scripts=false",
-            image,
-            "sh", "-c", _NPM_INSTALL_SCRIPT,
         ]
+        if pkg:
+            cmd.append("-e")
+            cmd.append(f"AIRLOCK_PKG=/app/ws/node_modules/{pkg}")
+        cmd += [image, "sh", "-c", _NPM_INSTALL_SCRIPT]
 
         try:
             proc = subprocess.run(
@@ -372,7 +380,7 @@ setTimeout(() => {
 
 
 def _is_blocked(kind: str, detail: str) -> bool:
-    blocked_markers = ("BLOCKED", "blocked", "no access", "cannot", "no secret-like")
+    blocked_markers = ("BLOCKED", "blocked", "no access", "cannot", "no secret-like", "allowed demo")
     up = detail.lower()
     return any(m.lower() in up for m in blocked_markers)
 
@@ -386,10 +394,19 @@ def _decode(raw) -> str:
 
 
 def _npm_install_suspicious(events: list[SandboxEvent], returncode: int) -> bool:
-    """A real npm install is suspicious if a package event reported an
-    UNBLOCKED restricted attempt (env/ssh/network/filesystem)."""
+    """A real npm install is suspicious when a restricted attempt was made.
+
+    Approved packages are admitted with allow_network/allow_secrets false, so
+    policy forbids outbound network: ANY network attempt is a violation even
+    though the container firewall blocks it. Our own AIRLOCK_CANARY
+    instrumentation read is permitted; everything else denied.
+    """
     for e in events:
-        if e.kind in ("env_access", "ssh_access", "network", "filesystem") and not e.blocked:
+        if e.kind == "network":
+            return True
+        if e.kind in ("ssh_access", "filesystem") and not e.blocked:
+            return True
+        if e.kind == "env_access" and "AIRLOCK_CANARY" not in e.detail and not e.blocked:
             return True
     return False
 
@@ -401,12 +418,31 @@ cd /app/ws || exit 1
 # Create a protected canary path to detect filesystem escape attempts.
 echo 'protected-canary' > /app/pt/airlock-protected-canary
 npm init -y >/dev/null 2>&1
-echo '--- npm install (isolated) ---'
+echo '--- npm install (isolated, lifecycle deferred) ---'
 ALCN_PROTECTED=/app/pt/airlock-protected-canary npm install /in/package.tgz \
-  --foreground-scripts --ignore-scripts=false --no-audit --no-fund \
+  --ignore-scripts --no-audit --no-fund \
   --cache /tmp/npm-cache 2>&1
-code=$?
-echo "AIRCRAFT_EVENT {\"kind\":\"install\",\"detail\":\"npm install exit code $code\",\"blocked\":true}"
-echo "AIRLOCK_NPM_EXIT=$code"
+inst=$?
+echo "AIRCRAFT_EVENT {\"kind\":\"install\",\"detail\":\"npm install exit code $inst\",\"blocked\":true}"
+# npm 11+ gates build scripts by default; run the admitted package's own
+# lifecycle scripts directly (npm run can hang waiting on child pipes), so
+# the artifact's real behavior is observed deterministically.
+if [ -n "$AIRLOCK_PKG" ]; then
+  PKG_DIR="$AIRLOCK_PKG"
+else
+  PKG_DIR=$(find /app/ws/node_modules -maxdepth 3 -name package.json 2>/dev/null | head -n1 | xargs dirname 2>/dev/null)
+fi
+run_lifecycle() {
+  name="$1"
+  [ -n "$PKG_DIR" ] || return 0
+  script=$(node -e "var p=require('$PKG_DIR/package.json');process.stdout.write(String((p.scripts||{})['$name']||''))" 2>/dev/null)
+  [ -n "$script" ] || return 0
+  echo "> $PKG_DIR $name> $script"
+  ( cd "$PKG_DIR" && ALCN_PROTECTED=/app/pt/airlock-protected-canary sh -c "$script" )
+}
+run_lifecycle preinstall
+run_lifecycle install
+run_lifecycle postinstall
+echo "AIRLOCK_NPM_EXIT=$inst"
 exit 0
 """

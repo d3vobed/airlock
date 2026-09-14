@@ -36,3 +36,5 @@ registry/lkg/*
 
 # Logs
 *.log
+.vercel
+.env*

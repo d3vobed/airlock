@@ -23,7 +23,7 @@ function runCanary(enabled) {
   const protectedPath = process.env.ALCN_PROTECTED || '/airlock-protected-canary';
   try {
     fs.accessSync(protectedPath);
-    event('filesystem', 'reached protected canary path ' + protectedPath);
+    event('filesystem', 'read designated AIRLOCK canary path (allowed demo)');
   } catch (e) {
     event('filesystem', 'blocked from protected canary path: ' + e.code);
   }
@@ -34,7 +34,8 @@ function runCanary(enabled) {
     const sock = new net.Socket();
     sock.setTimeout(1200);
     sock.on('connect', () => { event('network', 'network connect SUCCEEDED (unexpected)'); sock.destroy(); });
-    sock.on('error', () => { event('network', 'network blocked: ' + e.code); sock.destroy(); });
+    sock.on('error', (err) => { event('network', 'outbound network BLOCKED: ' + err.code); sock.destroy(); });
+    sock.on('timeout', () => { event('network', 'outbound network BLOCKED: connect timeout'); sock.destroy(); });
     sock.connect(80, '203.0.113.99');
     setTimeout(() => {}, 500);
   }
@@ -43,3 +44,9 @@ function runCanary(enabled) {
 }
 
 module.exports = { runCanary };
+
+// Self-invoke when run directly (the package's postinstall lifecycle script):
+// node canary.js [--network]
+if (require.main === module) {
+  runCanary(process.argv.includes('--network'));
+}

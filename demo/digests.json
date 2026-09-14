@@ -1,9 +1,9 @@
 {
-  "legitimate-package": "7922a88a95a70d260d48b2759adcfc110eba4da25ad7f52e785b002f66d7bc5e",
-  "malicious-package": "0668fab55c9bff945ee6c3ab39720be73fa5c830ca1d2c658a44d04af8e3dca5",
-  "dependency-confusion": "bb7abddc4a75bc55d8a473a6895b5818980f6953226ae64d3677aeb1a61d2550",
-  "malicious-update": "04931e9cd660cc16a4a9cdd287bcf5ba22f4fc733a1d538cbd4b7a3f422c843b",
+  "legitimate-package": "e2d72a8ff76cde1d3b089b1ed2b2c69c58bfa0d7cd261aeda529af6e562f1e98",
+  "malicious-package": "39a20c77a2f26d535628e8423eddc8dfc79f772c2e41a1627d228e12f26434d1",
+  "malicious-update": "61b54f577121924894436b70afbdc5258b6864810331c7f73023531382dc45ad",
+  "dependency-confusion": "392a94b6cb7a0d2bfe93721b561e8fac479faa036a67e0c193e7ab31e6da8a9b",
   "tampered-artifact": "d6ce85e08d4a306d679178aa5f5c8e4d3d87704a095163c313c12221191951dc",
-  "canary-1.0.0": "cd6272854cadf04cfec8a2b93a00f4cea31c73bb2a8ab61c26b56ebd910733c0",
-  "canary-1.0.1": "a454c30a1fa7393350b731b632c64ffe0cc0e881e8fd243338a1880581fcb99b"
+  "canary-1.0.0": "648deeea1b799a180de0bed6985bd07b82dedad6f8ca86f4e8a04e301aaaa51e",
+  "canary-1.0.1": "5ac1b6883e47554187c612549910d16642027a3d3d34f73a1a4d01f71bc8fa07"
 }

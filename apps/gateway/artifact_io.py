@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import shutil
 import tarfile
 from pathlib import Path
@@ -74,7 +75,12 @@ def make_tarball(package_dir: str | Path, out_path: str | Path) -> str:
         for f in sorted(package_dir.rglob("*")):
             if f.is_file():
                 arcname = f"package/{f.relative_to(package_dir)}"
-                tf.add(f, arcname=arcname)
+                info = tf.gettarinfo(str(f), arcname=arcname)
+                # Deterministic rebuilds: pin mtimes so only content changes
+                # land in git when fixtures are regenerated.
+                info.mtime = int(os.environ.get("AIRLOCK_SOURCE_DATE", "1704067200"))
+                with f.open("rb") as fh:
+                    tf.addfile(info, fh)
     return str(out_path)
 
 
