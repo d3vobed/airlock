@@ -432,7 +432,7 @@ fi
 run_lifecycle() {
   name="$1"
   [ -n "$PKG_DIR" ] || return 0
-  script=$(node -p "try{var p=require('$PKG_DIR/package.json').scripts||{};process.stdout.write((p['$name']||'').toString())}catch(e){process.stdout.write('')}" 2>/dev/null)
+  script=$(node -e "var p=require('$PKG_DIR/package.json');process.stdout.write(String((p.scripts||{})['$name']||''))" 2>/dev/null)
   [ -n "$script" ] || return 0
   echo "> $PKG_DIR $name> $script"
   ( cd "$PKG_DIR" && ALCN_PROTECTED=/app/pt/airlock-protected-canary sh -c "$script" )
