@@ -121,8 +121,7 @@ See [`SECURITY.md`](SECURITY.md) for responsible disclosure.
 | `docker` | Real container, `network:none`, `npm install`, lifecycle execution | Docker daemon |
 | `simulate` | Deterministic offline simulation (embedding-friendly) | none |
 
-The **docker** path runs the real `npm install` inside a container with no
-network; lifecycle-script behavior is captured. When Docker is unavailable the
+The **docker** path runs the real `npm install` inside a container with no network; lifecycle-script behavior is captured. When Docker is unavailable the
 pipeline **fails closed** rather than degrading to an unverified pass.
 Unverified environments run `--sandbox simulate` and every passport says so.
 
